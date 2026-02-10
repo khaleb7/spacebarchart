@@ -56,87 +56,13 @@ helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
   --set storage.region=us-east-1
 ```
 
-Provide S3 credentials via a Kubernetes secret (or IRSA on EKS) and set `existingSecret` if needed.
+**S3 (CDN):** Spacebar stores uploads (avatars, attachments, emoji) in an S3 bucket. Set `storage.bucket` and `storage.region`; create the bucket and grant the Spacebar workload IAM access (IRSA on EKS, or a secret with `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`). See [charts/spacebar/README.md](charts/spacebar/README.md) for S3 configuration and implications.
 
 **Let's Encrypt (Traefik):** cert-manager is installed by default. Set `ingress.letsEncrypt.enabled=true`, `ingress.letsEncrypt.email`, and optionally `ingress.letsEncrypt.createClusterIssuer=true` to get TLS certs automatically. Set `certManager.install: false` if you already have cert-manager. See [charts/spacebar/README.md](charts/spacebar/README.md) for full configuration.
 
 ## Terraform (EKS)
 
 See [examples/eks](examples/eks) for a minimal EKS + Spacebar Terraform example using `helm_release`.
-
-## Publishing the chart repo (maintainers)
-
-This section describes the GitHub actions and settings maintainers need so users can run `helm repo add spacebar https://<owner>.github.io/spacebarchart` and install the chart from GitHub.
-
-### One-time setup
-
-1. **Create the `gh-pages` branch (if it does not exist)**  
-   The [chart-releaser-action](https://github.com/helm/chart-releaser-action) can create it on the first run; if you prefer to create it yourself:
-   ```bash
-   git checkout --orphan gh-pages
-   git reset --hard
-   echo "# Helm chart repo" > README.md
-   git add README.md
-   git commit -m "Initialize gh-pages for Helm chart repo"
-   git push -u origin gh-pages
-   git checkout main
-   ```
-
-2. **Enable GitHub Pages**  
-   - In the repo: **Settings → Pages**.  
-   - Under **Build and deployment**, set **Source** to **Deploy from a branch**.  
-   - Set **Branch** to `gh-pages` and **Folder** to `/ (root)`.  
-   - Save. The Helm repo URL will be `https://<owner>.github.io/spacebarchart` (replace `<owner>` with the repo owner).
-
-3. **Workflow permissions**  
-   The workflow needs write access to contents (releases and `gh-pages`).  
-   - **Settings → Actions → General**.  
-   - Under **Workflow permissions**, choose **Read and write permissions** for the default `GITHUB_TOKEN`, then save.  
-   - If the repo uses strict defaults, the workflow file already requests `contents: write`; ensure the org does not override it.
-
-4. **Trigger the first publish**  
-   Push a commit to `main` or run the workflow manually (**Actions → Release Charts → Run workflow**).  
-   - The workflow packages `charts/spacebar`, creates a **GitHub Release** (e.g. `spacebar-0.1.0`) with the `.tgz` attached, and updates `gh-pages` with `index.yaml`.  
-   - After a minute or two, `https://<owner>.github.io/spacebarchart/index.yaml` should be reachable.
-
-### Publishing a new chart version
-
-1. **Bump the chart version**  
-   Edit `charts/spacebar/Chart.yaml` and increase `version` (e.g. `0.1.0` → `0.1.1`). Optionally set `appVersion` to match the Spacebar server version.
-
-2. **Commit and push to `main`**  
-   ```bash
-   git add charts/spacebar/Chart.yaml
-   git commit -m "chore(helm): release spacebar chart 0.1.1"
-   git push origin main
-   ```
-
-3. **Let the workflow run**  
-   On push to `main`, the **Release Charts** workflow runs. It only creates a new release if the chart version is **new** (not already present in GitHub Releases). So bumping the version and pushing is enough to publish.
-
-4. **Optional: run the workflow manually**  
-   **Actions → Release Charts → Run workflow → Run workflow.** Use this to re-run without a new commit (e.g. after fixing a failed run or regenerating `index.yaml`).
-
-### What the workflow does
-
-- **Trigger:** Push to `main` or manual dispatch.  
-- **Steps:** Checkout repo (full history), configure Git, then run [helm/chart-releaser-action](https://github.com/helm/chart-releaser-action) with `charts_dir: charts`.  
-- **For each chart** in `charts/` (e.g. `spacebar`):  
-  - Compares the chart’s `version` in `Chart.yaml` to existing **GitHub Release** tags (e.g. `spacebar-0.1.0`).  
-  - If the version is new: runs `helm package`, creates a GitHub Release with that tag, uploads the `.tgz` to **gh-pages** (and to Releases), and updates the `gh-pages` branch with an `index.yaml` that points at the chart packages on gh-pages.  
-  - If the version already has a release: does nothing for that chart.  
-- **Result:** `gh-pages` contains `index.yaml` and the `.tgz` files, so `https://<owner>.github.io/spacebarchart/index.yaml` and the charts are served from the same place. Users can run `helm repo add spacebar https://<owner>.github.io/spacebarchart` and `helm install spacebar spacebar/spacebar ...`.
-
-### Troubleshooting
-
-| Issue | What to do |
-|-------|------------|
-| `https://<owner>.github.io/spacebarchart/index.yaml` returns 404 or page loads but no YAML | The workflow uses `packages_with_index: true` so both `index.yaml` and the `.tgz` charts are pushed to `gh-pages`. Confirm **Settings → Pages** uses branch `gh-pages` and root. After a successful run, check the `gh-pages` branch in the repo: it should contain `index.yaml` and `spacebar-<version>.tgz`. If `gh-pages` is empty or has no `index.yaml`, re-run **Actions → Release Charts → Run workflow** (and ensure workflow permissions are **Read and write**). Pull the latest workflow file if you added `packages_with_index: true` so the index is written to gh-pages. |
-| Workflow fails with "resource not accessible by integration" or 403 | Ensure **Settings → Actions → General** gives the default `GITHUB_TOKEN` **Read and write** workflow permissions. |
-| New version does not appear after push | The workflow only releases **new** versions. Ensure `version` in `charts/spacebar/Chart.yaml` was increased and pushed. Check **Releases** for an existing tag (e.g. `spacebar-0.1.0`) and **Actions** for the latest run log. |
-| Want to re-publish the same chart version | Not recommended. Bump the version and push instead. To force re-packaging without a new release, you would need to delete the existing GitHub Release/tag and re-run the workflow (use with care). |
-
-**Helm repo URL for users:** `https://<owner>.github.io/spacebarchart` (replace `<owner>` with the repo owner).
 
 ## Links
 

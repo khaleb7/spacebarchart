@@ -135,14 +135,32 @@ Public endpoints (`api_endpointPublic`, `cdn_endpointPublic`, `gateway_endpointP
 
 ## Storage (S3)
 
-Default CDN storage is S3. Provide:
+The chart uses S3 as the default CDN storage backend. Spacebar stores **user uploads** in this bucket: avatars, attachments, emoji, guild icons, and other CDN-served assets. The API and Gateway read/write these objects via the Spacebar server process.
 
-- `storage.bucket` and `storage.region`
-- Credentials via:
-  - **EKS**: IRSA (IAM Role for Service Account); no keys in secret
-  - **Else**: Secret with keys `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and optionally `STORAGE_BUCKET`, `STORAGE_REGION`
+### Required configuration
 
-Set `existingSecret` to the name of the secret containing these keys.
+- **`storage.bucket`** — S3 bucket name. Create the bucket in the same region as your cluster (or a region you accept for latency/cost).
+- **`storage.region`** — AWS region of the bucket (e.g. `us-east-1`). Must match the bucket’s region.
+
+### Credentials
+
+- **EKS (recommended):** Use [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) (IAM Role for Service Account). Attach an IAM policy to the Spacebar pod’s service account that allows `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket` on the bucket (and optionally the bucket prefix). No `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` in a secret is needed; the chart can still set `STORAGE_BUCKET` and `STORAGE_REGION` via ConfigMap or values.
+- **Static credentials:** Create a Kubernetes secret with keys `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` (and optionally `STORAGE_BUCKET`, `STORAGE_REGION`). Set `existingSecret` to that secret’s name. The IAM user or role must have the same S3 permissions as above.
+
+### Implications
+
+| Topic | Implication |
+|-------|-------------|
+| **Bucket ownership** | The chart does not create the bucket. Create it (e.g. Terraform, AWS Console) and ensure the Spacebar workload has IAM permission to read/write. |
+| **Multi-replica** | If you scale Spacebar replicas beyond 1, all pods must use the same bucket (and region). S3 is shared; no extra config needed. |
+| **Cost** | Storage and request costs apply. Consider S3 lifecycle rules (e.g. move old objects to Glacier) or size limits if you need to cap cost. |
+| **Encryption** | Enable S3 server-side encryption (SSE-S3 or SSE-KMS) on the bucket if you need encryption at rest. The chart does not configure this. |
+| **CORS** | If clients upload directly to S3 (Spacebar may serve uploads via the API instead), configure CORS on the bucket. For typical Spacebar usage (upload through the API), CORS may not be required. |
+| **Existing data** | Switching from file storage to S3 (or vice versa) requires migrating existing CDN assets; the chart does not migrate. |
+
+### Optional: file storage
+
+For local dev or single-node clusters, you can override to file storage: set `storage.provider: file` and optionally `storage.existingClaim` (or let the chart create a PVC). All CDN data then lives on the volume; not suitable for multi-replica or durable production use.
 
 ## Troubleshooting
 

@@ -32,15 +32,13 @@ postgresql:
     storage:
       size: 1Gi
 
-# Storage: default S3 for CDN; optional file (PVC) override
+# Storage: default S3 for CDN (avatars, attachments, emoji, etc.). Chart does not create the bucket.
 storage:
   provider: s3
-  bucket: ""
-  region: ""
-  size: 1Gi  # used when provider: file and no existingClaim
-  # For file storage override (e.g. local dev):
-  # provider: file
-  # existingClaim: ""
+  bucket: ""   # S3 bucket name (create in AWS; ensure IAM/IRSA has s3:GetObject, PutObject, DeleteObject, ListBucket)
+  region: ""   # Bucket region (e.g. us-east-1)
+  size: 1Gi    # used when provider: file and no existingClaim
+  # For file storage override (e.g. local dev): provider: file, existingClaim: ""
   # storageClass: ""
 
 # Existing secret for DATABASE URL, S3 credentials, JWT secret, etc. Keys: DATABASE, STORAGE_BUCKET, STORAGE_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, etc.
