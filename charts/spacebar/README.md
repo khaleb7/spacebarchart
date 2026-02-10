@@ -8,12 +8,7 @@ Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, vo
 
 - **GitHub:** `https://github.com/<owner>/spacebarchart` (replace `<owner>` with your org or username)
 - Chart path: `charts/spacebar`
-- **Helm repo (add from GitHub):** After enabling [GitHub Pages](../../#install-from-github-helm-repo) for this repo, add the chart repo with:
-  ```bash
-  helm repo add spacebar https://<owner>.github.io/spacebarchart
-  helm repo update
-  helm install spacebar spacebar/spacebar -n spacebar --create-namespace ...
-  ```
+- **Helm repo (use this for install):** `https://khaleb7.github.io/spacebarchart` (or `https://<owner>.github.io/spacebarchart` for your fork)
 
 ## Requirements
 
@@ -25,12 +20,12 @@ Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, vo
 
 ## Installation
 
-### Install from GitHub (Helm repo)
+### Install from Helm repo (recommended)
 
-If this repo has GitHub Pages enabled (Settings → Pages → Source: `gh-pages`), you can add the chart directly:
+Add this chart repo and install:
 
 ```bash
-helm repo add spacebar https://<owner>.github.io/spacebarchart
+helm repo add spacebar https://khaleb7.github.io/spacebarchart
 helm repo update
 helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
   --set ingress.host=spacebar.example.com \
@@ -38,7 +33,7 @@ helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
   --set storage.region=us-east-1
 ```
 
-Replace `<owner>` with the GitHub org or username. The chart is published automatically on push to `main` via [release-charts.yml](../../.github/workflows/release-charts.yml).
+For your own fork, use `https://<owner>.github.io/spacebarchart` instead. The chart is published automatically on push to `main` via [release-charts.yml](../../.github/workflows/release-charts.yml).
 
 ### Quick start (from source)
 
@@ -80,11 +75,9 @@ helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
 **cert-manager is installed by default** with this chart. Enable Let's Encrypt and set your ACME account email:
 
 ```bash
-# Run helm dependency update once to fetch cert-manager (and optional CNPG)
-helm dependency update ./charts/spacebar
-
-# Install Spacebar (cert-manager is included); enable Let's Encrypt
-helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
+helm repo add spacebar https://khaleb7.github.io/spacebarchart
+helm repo update
+helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
   --set ingress.host=spacebar.example.com \
   --set ingress.letsEncrypt.enabled=true \
   --set ingress.letsEncrypt.email=admin@example.com \

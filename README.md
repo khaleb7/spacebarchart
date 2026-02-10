@@ -8,17 +8,14 @@ Kubernetes Helm chart for [Spacebar](https://spacebar.chat) (Discord-compatible 
 
 - **GitHub:** `https://github.com/<owner>/spacebarchart` (replace `<owner>` with your org or username)
 - Chart path in repo: `charts/spacebar`
-- **Helm repo (after enabling GitHub Pages):** `https://<owner>.github.io/spacebarchart`
+- **Helm repo (add this repo for install):** `https://<owner>.github.io/spacebarchart` — e.g. `https://khaleb7.github.io/spacebarchart` for the published chart.
 
-## Install from GitHub (Helm repo)
+## Install Spacebar (from Helm repo)
 
-After the chart is published (push to `main` runs the [release workflow](.github/workflows/release-charts.yml) and updates the `gh-pages` branch):
-
-1. **Enable GitHub Pages** in the repo: **Settings → Pages → Source:** `gh-pages` branch (root). The workflow creates/updates `gh-pages` automatically.
-2. Add the Helm repo and install:
+Add this chart repo and install (replace the repo URL with your fork if needed):
 
 ```bash
-helm repo add spacebar https://<owner>.github.io/spacebarchart
+helm repo add spacebar https://khaleb7.github.io/spacebarchart
 helm repo update
 helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
   --set ingress.host=spacebar.example.com \
@@ -26,7 +23,7 @@ helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
   --set storage.region=us-east-1
 ```
 
-Replace `<owner>` with your GitHub org or username.
+For your own fork, use `https://<owner>.github.io/spacebarchart` instead. Ensure GitHub Pages is enabled (Settings → Pages → Source: `gh-pages`) so the repo serves `index.yaml`.
 
 ## Quick start (from source)
 
