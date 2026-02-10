@@ -4,6 +4,11 @@
 
 Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, voice and video platform. Deploys Spacebar server with optional [CloudNative-PG](https://cloudnative-pg.io/) PostgreSQL, default Traefik Ingress, and S3 CDN storage.
 
+## Chart location
+
+- **GitHub:** `https://github.com/<owner>/spacebarchart` (replace `<owner>` with your org or username)
+- Chart path: `charts/spacebar`
+
 ## Requirements
 
 - Kubernetes 1.24+
@@ -22,9 +27,11 @@ Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, vo
    helm install cnpg cnpg/cloudnative-pg -n cnpg-system --create-namespace
    ```
 
-2. Install Spacebar:
+2. Clone the chart repo and install Spacebar:
 
    ```bash
+   git clone https://github.com/<owner>/spacebarchart
+   cd spacebarchart
    helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
      --set ingress.host=spacebar.local \
      --set storage.bucket=my-spacebar-cdn \
@@ -34,6 +41,8 @@ Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, vo
    For S3 you must provide credentials via an existing secret (keys: `STORAGE_BUCKET`, `STORAGE_REGION`, and `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, or use IRSA on EKS) and set `existingSecret` or create the secret manually and reference it.
 
 ### With in-chart CNPG operator (k3s)
+
+From the repo root (after `git clone https://github.com/<owner>/spacebarchart`):
 
 ```bash
 helm dependency update ./charts/spacebar

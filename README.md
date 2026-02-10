@@ -4,14 +4,23 @@
 
 Kubernetes Helm chart for [Spacebar](https://spacebar.chat) (Discord-compatible chat, voice and video platform). Supports k3s and EKS, with optional [CloudNative-PG](https://cloudnative-pg.io/) PostgreSQL, default Traefik Ingress, and S3 CDN storage.
 
+## Chart location
+
+- **GitHub:** `https://github.com/<owner>/spacebarchart` (replace `<owner>` with your org or username)
+- Chart path in repo: `charts/spacebar`
+
 ## Quick start
 
 ```bash
+# Clone the chart repo (or use your fork)
+git clone https://github.com/<owner>/spacebarchart
+cd spacebarchart
+
 # Add CloudNative-PG repo and install operator (if using in-cluster Postgres)
 helm repo add cnpg https://cloudnative-pg.github.io/charts
 helm install cnpg cnpg/cloudnative-pg -n cnpg-system --create-namespace
 
-# Install Spacebar
+# Install Spacebar from the chart in this repo
 helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
   --set ingress.host=spacebar.example.com \
   --set storage.bucket=my-bucket \

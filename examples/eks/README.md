@@ -2,6 +2,8 @@
 
 This example provisions an EKS cluster and installs Spacebar using the Helm chart.
 
+**Chart location:** [GitHub](https://github.com/<owner>/spacebarchart) — chart path: `charts/spacebar` (replace `<owner>` with your org or username).
+
 ## Prerequisites
 
 - AWS CLI configured with credentials
