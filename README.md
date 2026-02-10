@@ -8,8 +8,27 @@ Kubernetes Helm chart for [Spacebar](https://spacebar.chat) (Discord-compatible 
 
 - **GitHub:** `https://github.com/<owner>/spacebarchart` (replace `<owner>` with your org or username)
 - Chart path in repo: `charts/spacebar`
+- **Helm repo (after enabling GitHub Pages):** `https://<owner>.github.io/spacebarchart`
 
-## Quick start
+## Install from GitHub (Helm repo)
+
+After the chart is published (push to `main` runs the [release workflow](.github/workflows/release-charts.yml) and updates the `gh-pages` branch):
+
+1. **Enable GitHub Pages** in the repo: **Settings → Pages → Source:** `gh-pages` branch (root). The workflow creates/updates `gh-pages` automatically.
+2. Add the Helm repo and install:
+
+```bash
+helm repo add spacebar https://<owner>.github.io/spacebarchart
+helm repo update
+helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
+  --set ingress.host=spacebar.example.com \
+  --set storage.bucket=my-bucket \
+  --set storage.region=us-east-1
+```
+
+Replace `<owner>` with your GitHub org or username.
+
+## Quick start (from source)
 
 ```bash
 # Clone the chart repo (or use your fork)
@@ -37,6 +56,12 @@ Provide S3 credentials via a Kubernetes secret (or IRSA on EKS) and set `existin
 ## Terraform (EKS)
 
 See [examples/eks](examples/eks) for a minimal EKS + Spacebar Terraform example using `helm_release`.
+
+## Publishing the chart repo (maintainers)
+
+1. Enable **GitHub Pages**: repo **Settings → Pages → Source:** `gh-pages` branch (root).
+2. Push to `main` (or run the workflow manually). [release-charts.yml](.github/workflows/release-charts.yml) runs [chart-releaser-action](https://github.com/helm/chart-releaser-action): it packages the chart, creates a GitHub Release with the `.tgz`, and updates `gh-pages` with `index.yaml`. New versions are published when `charts/spacebar/Chart.yaml` version is bumped.
+3. The Helm repo URL is `https://<owner>.github.io/spacebarchart`.
 
 ## Links
 

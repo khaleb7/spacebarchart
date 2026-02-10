@@ -8,6 +8,12 @@ Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, vo
 
 - **GitHub:** `https://github.com/<owner>/spacebarchart` (replace `<owner>` with your org or username)
 - Chart path: `charts/spacebar`
+- **Helm repo (add from GitHub):** After enabling [GitHub Pages](../../#install-from-github-helm-repo) for this repo, add the chart repo with:
+  ```bash
+  helm repo add spacebar https://<owner>.github.io/spacebarchart
+  helm repo update
+  helm install spacebar spacebar/spacebar -n spacebar --create-namespace ...
+  ```
 
 ## Requirements
 
@@ -19,7 +25,22 @@ Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, vo
 
 ## Installation
 
-### Quick start (k3s / local)
+### Install from GitHub (Helm repo)
+
+If this repo has GitHub Pages enabled (Settings → Pages → Source: `gh-pages`), you can add the chart directly:
+
+```bash
+helm repo add spacebar https://<owner>.github.io/spacebarchart
+helm repo update
+helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
+  --set ingress.host=spacebar.example.com \
+  --set storage.bucket=my-bucket \
+  --set storage.region=us-east-1
+```
+
+Replace `<owner>` with the GitHub org or username. The chart is published automatically on push to `main` via [release-charts.yml](../../.github/workflows/release-charts.yml).
+
+### Quick start (from source)
 
 1. Install CloudNative-PG operator (if using in-cluster Postgres):
 
