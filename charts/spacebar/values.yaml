@@ -52,6 +52,12 @@ ingress:
   #  - secretName: spacebar-tls
   #    hosts:
   #      - spacebar.example.com
+  # Let's Encrypt via cert-manager (requires cert-manager installed in cluster)
+  letsEncrypt:
+    enabled: false
+    email: ""              # required when enabled (ACME account)
+    clusterIssuer: ""     # e.g. letsencrypt-prod; leave empty to create one per release
+    createClusterIssuer: false  # set true to create a ClusterIssuer (uses HTTP-01 challenge)
   annotations: {}
   # Traefik: WebSockets work by default. For NGINX uncomment:
   # nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"

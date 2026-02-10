@@ -27,7 +27,9 @@ helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
   --set storage.region=us-east-1
 ```
 
-Provide S3 credentials via a Kubernetes secret (or IRSA on EKS) and set `existingSecret` if needed. See [charts/spacebar/README.md](charts/spacebar/README.md) for full configuration.
+Provide S3 credentials via a Kubernetes secret (or IRSA on EKS) and set `existingSecret` if needed.
+
+**Let's Encrypt (Traefik):** With [cert-manager](https://cert-manager.io/) installed, set `ingress.letsEncrypt.enabled=true`, `ingress.letsEncrypt.email`, and optionally `ingress.letsEncrypt.createClusterIssuer=true` to get TLS certs automatically. See [charts/spacebar/README.md](charts/spacebar/README.md) for full configuration.
 
 ## Terraform (EKS)
 

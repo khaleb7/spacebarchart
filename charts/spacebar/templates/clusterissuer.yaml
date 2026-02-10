@@ -1,0 +1,18 @@
+{{- if and .Values.ingress.enabled (and .Values.ingress.letsEncrypt.enabled .Values.ingress.letsEncrypt.createClusterIssuer) (.Values.ingress.letsEncrypt.email) }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ include "spacebar.fullname" . }}-letsencrypt
+  labels:
+    {{- include "spacebar.labels" . | nindent 4 }}
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: {{ .Values.ingress.letsEncrypt.email | quote }}
+    privateKeySecretRef:
+      name: {{ include "spacebar.fullname" . }}-letsencrypt-acme
+    solvers:
+      - http01:
+          ingress:
+            class: {{ .Values.ingress.className | default "traefik" }}
+{{- end }}

@@ -5,16 +5,25 @@ metadata:
   name: {{ include "spacebar.fullname" . }}
   labels:
     {{- include "spacebar.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
   annotations:
+    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
+    {{- if and .Values.ingress.letsEncrypt.enabled .Values.ingress.letsEncrypt.email }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.letsEncrypt.clusterIssuer | default (printf "%s-letsencrypt" (include "spacebar.fullname" .)) }}
+    {{- end }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
-  {{- if .Values.ingress.tls }}
+  {{- $useLetsEncrypt := and .Values.ingress.letsEncrypt.enabled .Values.ingress.letsEncrypt.email }}
+  {{- if or .Values.ingress.tls $useLetsEncrypt }}
   tls:
+    {{- if $useLetsEncrypt }}
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: {{ include "spacebar.fullname" . }}-tls
+    {{- end }}
     {{- range .Values.ingress.tls }}
     - hosts:
         {{- range .hosts }}

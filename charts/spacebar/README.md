@@ -53,6 +53,28 @@ helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
   --set storage.region=us-east-1
 ```
 
+### Let's Encrypt (Traefik + cert-manager)
+
+Requires [cert-manager](https://cert-manager.io/) installed in the cluster. Enable Let's Encrypt and set your ACME account email:
+
+```bash
+# Install cert-manager (if not already)
+helm repo add jetstack https://charts.jetstack.io
+helm install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true
+
+# Install Spacebar with Let's Encrypt (creates Certificate + optional ClusterIssuer)
+helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
+  --set ingress.host=spacebar.example.com \
+  --set ingress.letsEncrypt.enabled=true \
+  --set ingress.letsEncrypt.email=admin@example.com \
+  --set ingress.letsEncrypt.createClusterIssuer=true \
+  --set storage.bucket=my-bucket \
+  --set storage.region=us-east-1
+```
+
+- **createClusterIssuer: true** — chart creates a ClusterIssuer (HTTP-01) for this release; no existing cert-manager issuer needed.
+- **clusterIssuer: "letsencrypt-prod"** — use an existing ClusterIssuer; set this and leave **createClusterIssuer: false**.
+
 ### EKS (Terraform)
 
 See [examples/eks](../../examples/eks) for a minimal EKS + Terraform example that installs this chart via `helm_release`.
@@ -75,7 +97,11 @@ See [examples/eks](../../examples/eks) for a minimal EKS + Terraform example tha
 | `ingress.enabled` | `true` | Create Ingress |
 | `ingress.className` | `traefik` | Ingress class (Traefik, nginx, alb) |
 | `ingress.host` | `spacebar.local` | Ingress host |
-| `ingress.tls` | `[]` | TLS config (secretName, hosts) |
+| `ingress.tls` | `[]` | TLS config (secretName, hosts); optional when using Let's Encrypt |
+| `ingress.letsEncrypt.enabled` | `false` | Request TLS cert from Let's Encrypt via cert-manager |
+| `ingress.letsEncrypt.email` | `""` | ACME account email (required when Let's Encrypt enabled) |
+| `ingress.letsEncrypt.clusterIssuer` | `""` | Existing ClusterIssuer name (e.g. letsencrypt-prod); empty when using createClusterIssuer |
+| `ingress.letsEncrypt.createClusterIssuer` | `false` | Create a ClusterIssuer (HTTP-01) for this release; requires cert-manager |
 | `existingSecret` | `""` | Existing secret for DATABASE, S3, JWT, etc. |
 
 Public endpoints (`api_endpointPublic`, `cdn_endpointPublic`, `gateway_endpointPublic`) are derived from `ingress.host` and `ingress.tls` and written into the config file at `CONFIG_PATH` for client discovery.
