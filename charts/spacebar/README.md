@@ -246,6 +246,21 @@ There is **no** built-in provider for “plain” local file serving without the
 
 - Spacebar’s env only documents `STORAGE_PROVIDER`, `STORAGE_BUCKET`, and `STORAGE_REGION`. If the server uses the AWS S3 SDK and supports a custom endpoint (e.g. via env or config), you can try `provider: s3` with that endpoint and the same bucket/region/credentials pattern; check the [Spacebar server](https://github.com/spacebarchat/server) source for endpoint/region overrides. This chart does not expose a custom S3 endpoint; you can pass it via `env` or `existingSecret` if the server supports it.
 
+### NFS and POSIX / durability
+
+| Use | NFS OK? | Notes |
+|-----|---------|--------|
+| **CDN file storage** (Spacebar uploads) | **Yes** | No strict fsync/durability requirements; NFS or any RWX volume is fine. |
+| **Postgres (CNPG Cluster)** | **Only if configured correctly** | PostgreSQL relies on `fsync` for durability. NFS can break that if the server or client caches writes. |
+
+**Postgres on NFS – requirements:**
+
+- **NFS server:** Export with **`sync`** so the server flushes data to storage before replying. Without this, a client `fsync()` can succeed while data is still in the server’s cache, leading to data loss on server crash.
+- **NFS client (Kubernetes mount):** Mount with **`hard`** (mandatory). Soft timeouts can cause I/O errors that PostgreSQL cannot recover from.
+- In Kubernetes, set **`mountOptions`** on the PV (or in the StorageClass used by CNPG) to include `hard` and any other options you need. The NFS server export must be configured with `sync` on the NFS server itself; the chart cannot set that.
+
+If you cannot guarantee sync server-side and hard client-side, prefer **block storage** (e.g. EBS, local PV) for the CNPG Cluster and use NFS only for CDN file storage.
+
 ## Troubleshooting
 
 | Error | Fix |
