@@ -1,0 +1,82 @@
+# Default values for Spacebar server.
+# See https://docs.spacebar.chat/setup/server/ for configuration reference.
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+image:
+  repository: spacebarchat/server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3001
+
+# Database: CloudNative-PG Cluster (when enabled), external URL, or SQLite (dev)
+database:
+  enabled: true
+  # externalUrl: "postgresql://user:pass@host:5432/spacebar"  # use when database.enabled false
+
+# CloudNative-PG: optional operator install + Cluster CR
+postgresql:
+  installOperator: false  # set true to install CNPG operator as subchart (e.g. for k3s)
+  # When database.enabled true, a Cluster CR is created. Operator must be installed (here or separately).
+  cluster:
+    instances: 1
+    storage:
+      size: 1Gi
+
+# Storage: default S3 for CDN; optional file (PVC) override
+storage:
+  provider: s3
+  bucket: ""
+  region: ""
+  size: 1Gi  # used when provider: file and no existingClaim
+  # For file storage override (e.g. local dev):
+  # provider: file
+  # existingClaim: ""
+  # storageClass: ""
+
+# Existing secret for DATABASE URL, S3 credentials, JWT secret, etc. Keys: DATABASE, STORAGE_BUCKET, STORAGE_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, etc.
+existingSecret: ""
+
+# Ingress: default Traefik (works on k3s and EKS)
+ingress:
+  enabled: true
+  className: traefik
+  host: spacebar.local
+  tls: []
+  #  - secretName: spacebar-tls
+  #    hosts:
+  #      - spacebar.example.com
+  annotations: {}
+  # Traefik: WebSockets work by default. For NGINX uncomment:
+  # nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+  # nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+# Public endpoints (injected into config for client discovery). Defaults derived from ingress.host.
+config:
+  apiEndpointPublic: ""   # e.g. https://spacebar.example.com/api/v9
+  cdnEndpointPublic: ""   # e.g. https://spacebar.example.com
+  gatewayEndpointPublic: "" # e.g. wss://spacebar.example.com
+  # If empty, computed from ingress.host and ingress.tls
+
+# Non-sensitive env for Spacebar (see https://docs.spacebar.chat/setup/server/configuration/env)
+env: {}
+  # LOG_REQUESTS: "-200"
+  # WS_VERBOSE: "false"
+
+resources: {}
+  # limits:
+  #   cpu: 500m
+  #   memory: 512Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

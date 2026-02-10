@@ -1,0 +1,16 @@
+{{- if and .Values.database.enabled (not .Values.database.externalUrl) }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "spacebar.pgClusterName" . }}
+  labels:
+    {{- include "spacebar.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.postgresql.cluster.instances | default 1 }}
+  storage:
+    size: {{ .Values.postgresql.cluster.storage.size | default "1Gi" }}
+  bootstrap:
+    initdb:
+      database: spacebar
+      owner: spacebar
+{{- end }}

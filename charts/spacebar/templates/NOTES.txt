@@ -1,0 +1,32 @@
+1. Get the application URL:
+{{- if .Values.ingress.enabled }}
+{{- $host := .Values.ingress.host }}
+  Visit {{ if .Values.ingress.tls }}https{{ else }}http{{ end }}://{{ $host }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "spacebar.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  kubectl --namespace {{ .Release.Namespace }} get services -w {{ include "spacebar.fullname" . }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "spacebar.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+  Visit http://127.0.0.1:{{ .Values.service.port }}
+{{- end }}
+
+2. Spacebar server runs API, CDN, and Gateway on port {{ .Values.service.port }}.
+   - API: {{ include "spacebar.apiEndpointPublic" . }}
+   - CDN: {{ include "spacebar.cdnEndpointPublic" . }}
+   - Gateway: {{ include "spacebar.gatewayEndpointPublic" . }}
+
+3. Storage: CDN uses {{ .Values.storage.provider }} by default.
+   {{- if eq .Values.storage.provider "s3" }}
+   Ensure STORAGE_BUCKET, STORAGE_REGION and S3 credentials are set (via existingSecret or IRSA).
+   {{- else }}
+   File storage uses PVC {{ .Values.storage.existingClaim | default (printf "%s-cdn" (include "spacebar.fullname" .)) }}.
+   {{- end }}
+
+4. Database: {{- if .Values.database.enabled }} CloudNative-PG Cluster or external URL. {{- else }} External URL or SQLite (dev). {{- end }}
+   If using CNPG Cluster, wait for the cluster to be ready: kubectl get cluster -n {{ .Release.Namespace }}
+
+For more: https://docs.spacebar.chat/setup/server/

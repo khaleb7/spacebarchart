@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spacebar.fullname" . }}
+  labels:
+    {{- include "spacebar.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spacebar.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "spacebar.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "spacebar.fullname" . }}
+            - secretRef:
+                name: {{ .Values.existingSecret | default (include "spacebar.fullname" .) }}
+            {{- if and .Values.database.enabled (not .Values.database.externalUrl) }}
+            - secretRef:
+                name: {{ include "spacebar.pgClusterName" . }}-app
+            {{- end }}
+          env:
+            {{- if and .Values.database.enabled (not .Values.database.externalUrl) }}
+            - name: DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spacebar.pgClusterName" . }}-app
+                  key: uri
+            {{- else if .Values.database.externalUrl }}
+            - name: DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | default (include "spacebar.fullname" .) }}
+                  key: DATABASE
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            {{- if eq .Values.storage.provider "file" }}
+            - name: data
+              mountPath: /data
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /api/ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "spacebar.fullname" . }}-config
+        {{- if eq .Values.storage.provider "file" }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.storage.existingClaim | default (printf "%s-cdn" (include "spacebar.fullname" .)) }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

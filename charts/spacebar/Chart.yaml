@@ -1,0 +1,19 @@
+apiVersion: v2
+name: spacebar
+description: Helm chart for Spacebar - Discord-compatible chat, voice and video platform
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - spacebar
+  - chat
+  - discord-compatible
+home: https://spacebar.chat
+sources:
+  - https://github.com/spacebarchat/server
+maintainers: []
+dependencies:
+  - name: cloudnative-pg
+    repository: https://cloudnative-pg.github.io/charts
+    version: "0.21.0"
+    condition: postgresql.installOperator
