@@ -31,5 +31,7 @@ jobs:
         uses: helm/chart-releaser-action@v1.7.0
         with:
           charts_dir: charts
+          # Upload .tgz to gh-pages (not just GitHub Releases) so index.yaml and packages are on the same branch Pages serves
+          packages_with_index: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

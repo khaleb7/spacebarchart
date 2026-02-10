@@ -116,15 +116,15 @@ This section describes the GitHub actions and settings maintainers need so users
 - **Steps:** Checkout repo (full history), configure Git, then run [helm/chart-releaser-action](https://github.com/helm/chart-releaser-action) with `charts_dir: charts`.  
 - **For each chart** in `charts/` (e.g. `spacebar`):  
   - Compares the chart’s `version` in `Chart.yaml` to existing **GitHub Release** tags (e.g. `spacebar-0.1.0`).  
-  - If the version is new: runs `helm package`, creates a GitHub Release with that tag, uploads the `.tgz`, and updates the `gh-pages` branch with an `index.yaml` that points at the release assets.  
+  - If the version is new: runs `helm package`, creates a GitHub Release with that tag, uploads the `.tgz` to **gh-pages** (and to Releases), and updates the `gh-pages` branch with an `index.yaml` that points at the chart packages on gh-pages.  
   - If the version already has a release: does nothing for that chart.  
-- **Result:** Users can run `helm repo add spacebar https://<owner>.github.io/spacebarchart` and `helm install spacebar spacebar/spacebar ...`.
+- **Result:** `gh-pages` contains `index.yaml` and the `.tgz` files, so `https://<owner>.github.io/spacebarchart/index.yaml` and the charts are served from the same place. Users can run `helm repo add spacebar https://<owner>.github.io/spacebarchart` and `helm install spacebar spacebar/spacebar ...`.
 
 ### Troubleshooting
 
 | Issue | What to do |
 |-------|------------|
-| `https://<owner>.github.io/spacebarchart/index.yaml` returns 404 | Confirm **Settings → Pages** uses branch `gh-pages` and root. Wait a few minutes after the first workflow run. Check **Actions** for a successful run and that `gh-pages` was updated. |
+| `https://<owner>.github.io/spacebarchart/index.yaml` returns 404 or page loads but no YAML | The workflow uses `packages_with_index: true` so both `index.yaml` and the `.tgz` charts are pushed to `gh-pages`. Confirm **Settings → Pages** uses branch `gh-pages` and root. After a successful run, check the `gh-pages` branch in the repo: it should contain `index.yaml` and `spacebar-<version>.tgz`. If `gh-pages` is empty or has no `index.yaml`, re-run **Actions → Release Charts → Run workflow** (and ensure workflow permissions are **Read and write**). Pull the latest workflow file if you added `packages_with_index: true` so the index is written to gh-pages. |
 | Workflow fails with "resource not accessible by integration" or 403 | Ensure **Settings → Actions → General** gives the default `GITHUB_TOKEN` **Read and write** workflow permissions. |
 | New version does not appear after push | The workflow only releases **new** versions. Ensure `version` in `charts/spacebar/Chart.yaml` was increased and pushed. Check **Releases** for an existing tag (e.g. `spacebar-0.1.0`) and **Actions** for the latest run log. |
 | Want to re-publish the same chart version | Not recommended. Bump the version and push instead. To force re-packaging without a new release, you would need to delete the existing GitHub Release/tag and re-run the workflow (use with care). |
