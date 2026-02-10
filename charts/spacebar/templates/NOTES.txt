@@ -19,11 +19,14 @@
    - CDN: {{ include "spacebar.cdnEndpointPublic" . }}
    - Gateway: {{ include "spacebar.gatewayEndpointPublic" . }}
 
-3. Storage: CDN uses {{ .Values.storage.provider }} by default.
+3. Storage: CDN uses {{ .Values.storage.provider }}.
    {{- if eq .Values.storage.provider "s3" }}
    Ensure STORAGE_BUCKET, STORAGE_REGION and S3 credentials are set (via existingSecret or IRSA).
    {{- else }}
    File storage uses PVC {{ .Values.storage.existingClaim | default (printf "%s-cdn" (include "spacebar.fullname" .)) }}.
+   {{- if .Values.storage.existingClaim }} (existing claim, e.g. NFS/RWX for multi-replica)
+   {{- else if .Values.storage.useSharedVolume }} (ReadWriteMany, e.g. NFS)
+   {{- end }}
    {{- end }}
 
 4. Database: {{- if .Values.database.enabled }} CloudNative-PG Cluster or external URL. {{- else }} External URL or SQLite (dev). {{- end }}

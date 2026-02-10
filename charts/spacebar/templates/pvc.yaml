@@ -7,7 +7,11 @@ metadata:
     {{- include "spacebar.labels" . | nindent 4 }}
 spec:
   accessModes:
+    {{- if .Values.storage.useSharedVolume }}
+    - ReadWriteMany
+    {{- else }}
     - ReadWriteOnce
+    {{- end }}
   resources:
     requests:
       storage: {{ .Values.storage.size | default "1Gi" }}

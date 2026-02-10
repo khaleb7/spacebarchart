@@ -38,8 +38,14 @@ storage:
   bucket: ""   # S3 bucket name (create in AWS; ensure IAM/IRSA has s3:GetObject, PutObject, DeleteObject, ListBucket)
   region: ""   # Bucket region (e.g. us-east-1)
   size: 1Gi    # used when provider: file and no existingClaim
-  # For file storage override (e.g. local dev): provider: file, existingClaim: ""
-  # storageClass: ""
+  # File storage (when provider: file):
+  # - existingClaim: ""  → chart creates a PVC (RWO by default; use useSharedVolume + storageClass for NFS/RWX).
+  # - existingClaim: "my-nfs-pvc"  → use an existing PVC (e.g. NFS or other RWX); good for multi-replica.
+  existingClaim: ""
+  # When provider: file, no existingClaim, and useSharedVolume: true, chart creates a ReadWriteMany (RWX) PVC.
+  # Set storageClass to your NFS (or other RWX) provisioner (e.g. nfs-client, nfs).
+  useSharedVolume: false
+  storageClass: ""   # optional; for file PVC (created or existing claim's class)
 
 # Existing secret for DATABASE URL, S3 credentials, JWT secret, etc. Keys: DATABASE, STORAGE_BUCKET, STORAGE_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, etc.
 existingSecret: ""

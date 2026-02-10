@@ -120,6 +120,9 @@ See [examples/eks](../../examples/eks) for a minimal EKS + Terraform example tha
 | `storage.provider` | `s3` | CDN storage: `s3` or `file` |
 | `storage.bucket` | `""` | S3 bucket name (required for S3) |
 | `storage.region` | `""` | S3 region (required for S3) |
+| `storage.existingClaim` | `""` | When `provider: file`, use this PVC name (e.g. NFS/RWX for multi-replica). Empty = chart creates a PVC. |
+| `storage.useSharedVolume` | `false` | When `provider: file` and no `existingClaim`: if true, chart creates a ReadWriteMany (RWX) PVC (set `storageClass` to NFS or RWX provisioner). |
+| `storage.storageClass` | `""` | Optional storage class for chart-created file PVC (e.g. `nfs-client` for NFS). |
 | `ingress.enabled` | `true` | Create Ingress |
 | `ingress.className` | `traefik` | Ingress class (Traefik, nginx, alb) |
 | `ingress.host` | `spacebar.local` | Ingress host |
@@ -221,9 +224,27 @@ spec:
 
 See [CloudNative-PG Backup](https://cloudnative-pg.io/documentation/current/backup_barmanobjectstore/) and [Scheduling Backups](https://cloudnative-pg.io/documentation/current/scheduling_backup/) for retention, compression, and recovery.
 
-### Optional: file storage
+### When you can’t use S3 (local or no cloud object store)
 
-For local dev or single-node clusters, you can override to file storage: set `storage.provider: file` and optionally `storage.existingClaim` (or let the chart create a PVC). All CDN data then lives on the volume; not suitable for multi-replica or durable production use.
+Spacebar supports **two** CDN storage providers ([env docs](https://docs.spacebar.chat/setup/server/configuration/env)):
+
+| Provider | Use case | Chart config |
+|----------|----------|--------------|
+| **`file`** | Local path on disk. Good for **local dev**, single-node, or when you have no S3/compatible object store. | `storage.provider: file`; optional `storage.existingClaim` or let the chart create a PVC. Data lives at `STORAGE_LOCATION` (default `/data`). |
+| **`s3`** | AWS S3 (or S3-compatible API). Default in this chart. | `storage.provider: s3`, `storage.bucket`, `storage.region`; credentials via secret or IRSA. |
+
+There is **no** built-in provider for “plain” local file serving without the `file` backend: if you can’t use S3, use **file** storage.
+
+**File storage (local or NFS):**
+
+- Set `storage.provider: file`. Either:
+  - **Chart-created PVC:** Leave `storage.existingClaim` unset. The chart creates a PVC. By default it uses **ReadWriteOnce** (single replica). For **multi-replica** with a shared volume (e.g. NFS), set `storage.useSharedVolume: true` and `storage.storageClass` to your NFS (or other RWX) provisioner (e.g. `nfs-client`, `nfs`); the chart will create a **ReadWriteMany** PVC.
+  - **Existing PVC (e.g. NFS):** Set `storage.existingClaim` to the name of an existing PersistentVolumeClaim. Use a PVC backed by **NFS** or any **ReadWriteMany** volume so multiple Spacebar replicas can share the same CDN data. Create the PV/PVC (or use your NFS provisioner) outside the chart, then reference it here.
+- The server writes CDN assets to a volume at `STORAGE_LOCATION` (chart default `/data`). No bucket or region; no S3 credentials required.
+
+**S3-compatible backends (MinIO, DigitalOcean Spaces, etc.):**
+
+- Spacebar’s env only documents `STORAGE_PROVIDER`, `STORAGE_BUCKET`, and `STORAGE_REGION`. If the server uses the AWS S3 SDK and supports a custom endpoint (e.g. via env or config), you can try `provider: s3` with that endpoint and the same bucket/region/credentials pattern; check the [Spacebar server](https://github.com/spacebarchat/server) source for endpoint/region overrides. This chart does not expose a custom S3 endpoint; you can pass it via `env` or `existingSecret` if the server supports it.
 
 ## Troubleshooting
 
