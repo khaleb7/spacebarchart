@@ -2,7 +2,7 @@ apiVersion: v2
 name: spacebar
 description: Helm chart for Spacebar - Discord-compatible chat, voice and video platform
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "1.0"
 keywords:
   - spacebar
