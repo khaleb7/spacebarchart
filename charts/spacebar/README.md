@@ -14,6 +14,7 @@ Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, vo
 - Kubernetes 1.24+
 - Helm 3.x
 - Traefik Ingress Controller (default) or NGINX/ALB
+- **cert-manager** is installed by default by this chart (set `certManager.install: false` if you already have it)
 - For PostgreSQL: [CloudNative-PG operator](https://cloudnative-pg.io/documentation/current/installation_upgrade/) installed (optionally via this chart with `postgresql.installOperator: true`)
 
 ## Installation
@@ -55,14 +56,13 @@ helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
 
 ### Let's Encrypt (Traefik + cert-manager)
 
-Requires [cert-manager](https://cert-manager.io/) installed in the cluster. Enable Let's Encrypt and set your ACME account email:
+**cert-manager is installed by default** with this chart. Enable Let's Encrypt and set your ACME account email:
 
 ```bash
-# Install cert-manager (if not already)
-helm repo add jetstack https://charts.jetstack.io
-helm install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true
+# Run helm dependency update once to fetch cert-manager (and optional CNPG)
+helm dependency update ./charts/spacebar
 
-# Install Spacebar with Let's Encrypt (creates Certificate + optional ClusterIssuer)
+# Install Spacebar (cert-manager is included); enable Let's Encrypt
 helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
   --set ingress.host=spacebar.example.com \
   --set ingress.letsEncrypt.enabled=true \
@@ -71,6 +71,8 @@ helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
   --set storage.bucket=my-bucket \
   --set storage.region=us-east-1
 ```
+
+Set **certManager.install: false** if cert-manager is already installed in the cluster.
 
 - **createClusterIssuer: true** — chart creates a ClusterIssuer (HTTP-01) for this release; no existing cert-manager issuer needed.
 - **clusterIssuer: "letsencrypt-prod"** — use an existing ClusterIssuer; set this and leave **createClusterIssuer: false**.
@@ -101,7 +103,8 @@ See [examples/eks](../../examples/eks) for a minimal EKS + Terraform example tha
 | `ingress.letsEncrypt.enabled` | `false` | Request TLS cert from Let's Encrypt via cert-manager |
 | `ingress.letsEncrypt.email` | `""` | ACME account email (required when Let's Encrypt enabled) |
 | `ingress.letsEncrypt.clusterIssuer` | `""` | Existing ClusterIssuer name (e.g. letsencrypt-prod); empty when using createClusterIssuer |
-| `ingress.letsEncrypt.createClusterIssuer` | `false` | Create a ClusterIssuer (HTTP-01) for this release; requires cert-manager |
+| `ingress.letsEncrypt.createClusterIssuer` | `false` | Create a ClusterIssuer (HTTP-01) for this release |
+| `certManager.install` | `true` | Install cert-manager as a chart dependency (set false if already installed) |
 | `existingSecret` | `""` | Existing secret for DATABASE, S3, JWT, etc. |
 
 Public endpoints (`api_endpointPublic`, `cdn_endpointPublic`, `gateway_endpointPublic`) are derived from `ingress.host` and `ingress.tls` and written into the config file at `CONFIG_PATH` for client discovery.

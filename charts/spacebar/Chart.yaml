@@ -17,3 +17,7 @@ dependencies:
     repository: https://cloudnative-pg.github.io/charts
     version: "0.21.0"
     condition: postgresql.installOperator
+  - name: cert-manager
+    repository: https://charts.jetstack.io
+    version: "v1.14.0"
+    condition: certManager.install

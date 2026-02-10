@@ -43,6 +43,17 @@ storage:
 # Existing secret for DATABASE URL, S3 credentials, JWT secret, etc. Keys: DATABASE, STORAGE_BUCKET, STORAGE_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, etc.
 existingSecret: ""
 
+# cert-manager: installed by default for Let's Encrypt TLS (set certManager.install: false if already installed)
+certManager:
+  install: true
+
+# cert-manager subchart values (when certManager.install is true)
+cert-manager:
+  installCRDs: true
+  crds:
+    enabled: true
+  # namespace: cert-manager  # optional: deploy to cert-manager namespace (create namespace first)
+
 # Ingress: default Traefik (works on k3s and EKS)
 ingress:
   enabled: true

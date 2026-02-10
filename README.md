@@ -16,11 +16,14 @@ Kubernetes Helm chart for [Spacebar](https://spacebar.chat) (Discord-compatible 
 git clone https://github.com/<owner>/spacebarchart
 cd spacebarchart
 
-# Add CloudNative-PG repo and install operator (if using in-cluster Postgres)
-helm repo add cnpg https://cloudnative-pg.github.io/charts
-helm install cnpg cnpg/cloudnative-pg -n cnpg-system --create-namespace
+# Fetch dependencies (cert-manager is included by default; optional CNPG)
+helm dependency update ./charts/spacebar
 
-# Install Spacebar from the chart in this repo
+# Optional: install CloudNative-PG operator separately (or set postgresql.installOperator=true)
+# helm repo add cnpg https://cloudnative-pg.github.io/charts
+# helm install cnpg cnpg/cloudnative-pg -n cnpg-system --create-namespace
+
+# Install Spacebar from the chart in this repo (includes cert-manager)
 helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
   --set ingress.host=spacebar.example.com \
   --set storage.bucket=my-bucket \
@@ -29,7 +32,7 @@ helm install spacebar ./charts/spacebar -n spacebar --create-namespace \
 
 Provide S3 credentials via a Kubernetes secret (or IRSA on EKS) and set `existingSecret` if needed.
 
-**Let's Encrypt (Traefik):** With [cert-manager](https://cert-manager.io/) installed, set `ingress.letsEncrypt.enabled=true`, `ingress.letsEncrypt.email`, and optionally `ingress.letsEncrypt.createClusterIssuer=true` to get TLS certs automatically. See [charts/spacebar/README.md](charts/spacebar/README.md) for full configuration.
+**Let's Encrypt (Traefik):** cert-manager is installed by default. Set `ingress.letsEncrypt.enabled=true`, `ingress.letsEncrypt.email`, and optionally `ingress.letsEncrypt.createClusterIssuer=true` to get TLS certs automatically. Set `certManager.install: false` if you already have cert-manager. See [charts/spacebar/README.md](charts/spacebar/README.md) for full configuration.
 
 ## Terraform (EKS)
 
