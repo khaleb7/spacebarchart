@@ -158,6 +158,69 @@ The chart uses S3 as the default CDN storage backend. Spacebar stores **user upl
 | **CORS** | If clients upload directly to S3 (Spacebar may serve uploads via the API instead), configure CORS on the bucket. For typical Spacebar usage (upload through the API), CORS may not be required. |
 | **Existing data** | Switching from file storage to S3 (or vice versa) requires migrating existing CDN assets; the chart does not migrate. |
 
+### Using S3 for Postgres backups (CloudNative-PG)
+
+When using the in-cluster CloudNative-PG Cluster (no `database.externalUrl`), you can send **Postgres backups and WAL** to the same S3 bucket (with a path prefix) or to a separate bucket. CloudNative-PG uses [Barman Cloud](https://cloudnative-pg.io/documentation/current/backup_barmanobjectstore/) for continuous physical backup and WAL archiving; this enables hot backups and Point-in-Time Recovery (PITR).
+
+The chart does **not** configure backup by default. To enable backup to S3 you must add `spec.backup.barmanObjectStore` to the Cluster. Two options:
+
+1. **Same bucket, different path** — Use the CDN bucket with a prefix, e.g. `s3://my-spacebar-bucket/backups/postgres`. One bucket, one set of IAM/credentials; ensure the CNPG Cluster’s service account or backup secret has `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, `s3:ListBucket` on that prefix (or the whole bucket).
+2. **Separate bucket** — Use a dedicated backup bucket, e.g. `s3://my-spacebar-backups`. Requires a second bucket and credentials (or IRSA) for the CNPG backup job.
+
+**Requirements:**
+
+- Postgres image must include Barman Cloud tools. Use the image `ghcr.io/cloudnative-pg/postgresql` (or a derivative that includes `barman-cli-cloud`). Override the Cluster’s image via `postgresql.cluster.image` if your chart version exposes it, or patch the Cluster after install.
+- A Kubernetes secret with S3 credentials (e.g. `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) or IRSA for the CNPG backup job.
+- The Cluster CR must include a `backup.barmanObjectStore` block (see below). The chart does not currently add this from values; you can patch the Cluster or use a post-install hook.
+
+**Example: patch the Cluster to add backup to S3**
+
+After installing the chart, patch the Cluster to set the backup destination (same bucket as CDN, with prefix):
+
+```yaml
+# backup-patch.yaml
+spec:
+  backup:
+    barmanObjectStore:
+      destinationPath: "s3://MY_CDN_BUCKET/backups/postgres"
+      s3Credentials:
+        accessKeyId:
+          name: spacebar-s3-creds   # secret with AWS_ACCESS_KEY_ID
+          key: AWS_ACCESS_KEY_ID
+        secretAccessKey:
+          name: spacebar-s3-creds
+          key: AWS_SECRET_ACCESS_KEY
+      retentionPolicy: "30d"
+```
+
+Apply the patch (replace the cluster name and bucket if needed):
+
+```bash
+kubectl patch cluster -n spacebar spacebar-postgresql --type merge --patch-file backup-patch.yaml
+```
+
+Use the same secret as for Spacebar S3 (CDN) if using the same bucket and credentials; otherwise create a dedicated secret for backups.
+
+**Optional: scheduled backups**
+
+To run backups on a schedule, create a `ScheduledBackup` that targets the same Cluster and uses the same object store (the Cluster’s `barmanObjectStore` destination). Example (run daily at 2:00 UTC):
+
+```yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: spacebar-daily
+  namespace: spacebar
+spec:
+  schedule: "0 2 * * *"   # cron: daily at 02:00 UTC
+  cluster:
+    name: spacebar-postgresql
+  backupOwnerReference: self
+  target: primary
+```
+
+See [CloudNative-PG Backup](https://cloudnative-pg.io/documentation/current/backup_barmanobjectstore/) and [Scheduling Backups](https://cloudnative-pg.io/documentation/current/scheduling_backup/) for retention, compression, and recovery.
+
 ### Optional: file storage
 
 For local dev or single-node clusters, you can override to file storage: set `storage.provider: file` and optionally `storage.existingClaim` (or let the chart create a PVC). All CDN data then lives on the volume; not suitable for multi-replica or durable production use.

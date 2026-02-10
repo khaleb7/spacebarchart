@@ -33,6 +33,28 @@ locals {
   tags = merge(var.tags, {
     "terraform" = "true"
   })
+  # Bucket name: use created bucket when create_s3_bucket is true, else use var.s3_bucket (existing).
+  s3_bucket_name = var.create_s3_bucket ? aws_s3_bucket.spacebar[0].id : var.s3_bucket
+}
+
+# Optional: S3 bucket for CDN (and optionally Postgres backups via path prefix, e.g. s3://bucket/backups/postgres).
+resource "aws_s3_bucket" "spacebar" {
+  count = var.create_s3_bucket ? 1 : 0
+
+  bucket        = var.s3_bucket
+  force_destroy = var.s3_bucket_force_destroy
+  tags          = merge(local.tags, { "Name" = var.s3_bucket })
+}
+
+resource "aws_s3_bucket_public_access_block" "spacebar" {
+  count = var.create_s3_bucket ? 1 : 0
+
+  bucket = aws_s3_bucket.spacebar[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # EKS cluster
@@ -136,7 +158,7 @@ resource "helm_release" "spacebar" {
       }
       storage = {
         provider = "s3"
-        bucket   = var.s3_bucket
+        bucket   = local.s3_bucket_name
         region   = var.aws_region
       }
       database = {
