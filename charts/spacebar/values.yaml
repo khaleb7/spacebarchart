@@ -6,8 +6,11 @@ fullnameOverride: ""
 
 replicaCount: 1
 
+# Spacebar server image. Official spacebarchat/server:latest may be unavailable on Docker Hub;
+# using a community image by default. Override with your own image (e.g. build from
+# https://github.com/spacebarchat/server) or spacebarchat/server if/when updated.
 image:
-  repository: spacebarchat/server
+  repository: ccgurley/spacebar-server
   tag: latest
   pullPolicy: IfNotPresent
 

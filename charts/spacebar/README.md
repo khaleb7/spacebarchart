@@ -15,7 +15,7 @@ Helm chart for [Spacebar](https://spacebar.chat) - a Discord-compatible chat, vo
 - Kubernetes 1.24+
 - Helm 3.x
 - Traefik Ingress Controller (default) or NGINX/ALB
-- **cert-manager** is installed by default by this chart (set `certManager.install: false` if you already have it)
+- **cert-manager** is installed by default by this chart. **If cert-manager is already in the cluster, set `certManager.install: false`** or install will fail with CRD ownership errors.
 - For PostgreSQL: [CloudNative-PG operator](https://cloudnative-pg.io/documentation/current/installation_upgrade/) installed (optionally via this chart with `postgresql.installOperator: true`)
 
 ## Installation
@@ -34,6 +34,16 @@ helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
 ```
 
 For your own fork, use `https://<owner>.github.io/spacebarchart` instead. The chart is published automatically on push to `main` via [release-charts.yml](../../.github/workflows/release-charts.yml).
+
+**If cert-manager is already installed**, add `--set certManager.install=false`:
+
+```bash
+helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
+  --set certManager.install=false \
+  --set ingress.host=spacebar.example.com \
+  --set storage.bucket=my-bucket \
+  --set storage.region=us-east-1
+```
 
 ### Quick start (from source)
 
@@ -99,7 +109,7 @@ See [examples/eks](../../examples/eks) for a minimal EKS + Terraform example tha
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `image.repository` | `spacebarchat/server` | Spacebar server image |
+| `image.repository` | `ccgurley/spacebar-server` | Spacebar server image (official `spacebarchat/server` may be unavailable; override or build from [source](https://github.com/spacebarchat/server)) |
 | `image.tag` | `latest` | Image tag |
 | `replicaCount` | `1` | Number of replicas (scale >1 requires RabbitMQ) |
 | `database.enabled` | `true` | Use PostgreSQL (CloudNative-PG Cluster or external) |
@@ -133,6 +143,13 @@ Default CDN storage is S3. Provide:
   - **Else**: Secret with keys `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and optionally `STORAGE_BUCKET`, `STORAGE_REGION`
 
 Set `existingSecret` to the name of the secret containing these keys.
+
+## Troubleshooting
+
+| Error | Fix |
+|-------|-----|
+| `CustomResourceDefinition ... exists and cannot be imported ... invalid ownership metadata; label validation error: missing key "app.kubernetes.io/managed-by"` | cert-manager is already installed in the cluster. Install with **`--set certManager.install=false`** so the chart does not try to manage cert-manager CRDs. |
+| `ErrImagePull` / `ImagePullBackOff` for `spacebarchat/server:latest: not found` | The default image is now `ccgurley/spacebar-server:latest`. If you overrode to `spacebarchat/server` and it fails, use **`--set image.repository=ccgurley/spacebar-server`** or build from [source](https://github.com/spacebarchat/server) and set `image.repository` to your image. |
 
 ## Uninstall
 

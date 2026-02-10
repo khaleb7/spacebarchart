@@ -23,6 +23,16 @@ helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
   --set storage.region=us-east-1
 ```
 
+**If cert-manager is already installed in the cluster**, add `--set certManager.install=false` to avoid CRD ownership conflicts:
+
+```bash
+helm install spacebar spacebar/spacebar -n spacebar --create-namespace \
+  --set certManager.install=false \
+  --set ingress.host=spacebar.example.com \
+  --set storage.bucket=my-bucket \
+  --set storage.region=us-east-1
+```
+
 For your own fork, use `https://<owner>.github.io/spacebarchart` instead. Ensure GitHub Pages is enabled (Settings → Pages → Source: `gh-pages`) so the repo serves `index.yaml`.
 
 ## Quick start (from source)
